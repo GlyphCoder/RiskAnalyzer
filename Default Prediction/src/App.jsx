@@ -20,6 +20,12 @@ import About from "./components/About";
 import "./App.css";
 import ProtectedRoutes from "./routes/ProtectedRoutes";
 import ResultsModal from "./assets/modal/ResultsModal";
+import {
+  isDemoSession,
+  getDemoHistory,
+  saveDemoAnalysis,
+  deleteDemoAnalysis,
+} from "./demoSession";
 
 function AppInner() {
   const [analysisData, setAnalysisData] = useState(null);
@@ -38,6 +44,12 @@ function AppInner() {
       const token = localStorage.getItem("token");
       if (!token) {
         setAnalysisHistory([]);
+        return;
+      }
+
+      // Demo sessions have no server-side account; their history lives locally.
+      if (isDemoSession()) {
+        setAnalysisHistory(getDemoHistory());
         return;
       }
 
@@ -66,6 +78,13 @@ function AppInner() {
     try {
       const token = localStorage.getItem("token");
       const analysisId = analysis._id || analysis.id;
+
+      if (isDemoSession()) {
+        deleteDemoAnalysis(analysisId);
+        setAnalysisHistory(getDemoHistory());
+        showNotification("Analysis deleted successfully", "success");
+        return;
+      }
 
       const response = await fetch(
         `https://defaultprediction-backend-mongodb.onrender.com/results/DeleteResult/${analysisId}`,
@@ -137,6 +156,10 @@ function AppInner() {
   const saveAnalysisToBackend = async (analysisData) => {
     try {
       const token = localStorage.getItem("token");
+
+      if (isDemoSession()) {
+        return saveDemoAnalysis(analysisData);
+      }
 
       const response = await fetch(
         "https://defaultprediction-backend-mongodb.onrender.com/results/SaveResults",

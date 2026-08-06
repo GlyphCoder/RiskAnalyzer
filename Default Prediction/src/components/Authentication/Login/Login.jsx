@@ -8,7 +8,9 @@ import {
   FaEye,
   FaEyeSlash,
   FaUserTie,
+  FaPlay,
 } from "react-icons/fa";
+import { startDemoSession } from "../../../demoSession";
 
 function Login() {
   const URL = "https://defaultprediction-backend-mongodb.onrender.com";
@@ -107,16 +109,77 @@ function Login() {
     setShowPassword(!showPassword);
   };
 
+  const handleDemoLogin = (userType) => {
+    startDemoSession(userType);
+    navigate("/dashboard");
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-white px-4">
       {/* Card */}
       <div className="w-full max-w-md p-8 bg-white rounded-xl shadow-xl border border-gray-200">
         {/* Header */}
         <div className="text-center mb-6">
-          <h2 className="text-3xl font-bold text-blue-900">Welcome Back!</h2>
+          <h2 className="text-3xl font-bold text-blue-900">RiskAnalyzer</h2>
           <p className="text-gray-500 text-sm">
-            Sign in to continue to your account
+            AI-powered credit risk &amp; loan recommendations
           </p>
+        </div>
+
+        {/* Demo access - no credentials required */}
+        <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
+          <div className="flex items-center mb-1">
+            <FaPlay className="text-blue-600 mr-2 text-xs" />
+            <h3 className="text-sm font-semibold text-blue-900">
+              Try the demo — no account needed
+            </h3>
+          </div>
+          <p className="text-xs text-gray-600 mb-3">
+            Pick a role to explore the app with sample data. Predictions come
+            from the live model.
+          </p>
+
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={() => handleDemoLogin("user")}
+              className="w-full text-left px-3 py-2.5 bg-white border border-blue-200 rounded-md hover:border-blue-500 hover:shadow-sm transition-all"
+            >
+              <span className="flex items-center text-sm font-semibold text-blue-900">
+                <FaUser className="mr-2 text-blue-600" />
+                Continue as Customer
+              </span>
+              <span className="block mt-0.5 ml-6 text-xs text-gray-500">
+                Fill in one application and see your risk score and loan offer
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleDemoLogin("banker")}
+              className="w-full text-left px-3 py-2.5 bg-white border border-green-200 rounded-md hover:border-green-600 hover:shadow-sm transition-all"
+            >
+              <span className="flex items-center text-sm font-semibold text-green-900">
+                <FaUserTie className="mr-2 text-green-700" />
+                Continue as Banker
+              </span>
+              <span className="block mt-0.5 ml-6 text-xs text-gray-500">
+                Upload a batch of applicants and review the whole portfolio
+              </span>
+            </button>
+          </div>
+        </div>
+
+        {/* Divider between demo access and real sign-in */}
+        <div className="relative mb-5">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-300"></div>
+          </div>
+          <div className="relative flex justify-center text-xs">
+            <span className="bg-white px-2 text-gray-500 uppercase tracking-wide">
+              or sign in to your account
+            </span>
+          </div>
         </div>
 
         {/* Form */}

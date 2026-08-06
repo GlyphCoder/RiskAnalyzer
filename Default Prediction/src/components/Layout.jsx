@@ -11,6 +11,7 @@ import PersonIcon from "@mui/icons-material/Person"; // For user
 import LogoutIcon from "@mui/icons-material/Logout";
 import MenuIcon from "@mui/icons-material/Menu";
 import CloseIcon from "@mui/icons-material/Close"; // Add this import
+import { isDemoSession, clearDemoSession } from "../demoSession";
 
 function Layout({ children }) {
   const location = useLocation();
@@ -32,6 +33,7 @@ function Layout({ children }) {
   };
 
   const isBanker = getBankerStatus();
+  const isDemo = isDemoSession();
 
   const handleChatbotToggle = () => {
     setIsChatbotOpen((prev) => !prev);
@@ -50,6 +52,7 @@ function Layout({ children }) {
     localStorage.removeItem("token");
     localStorage.removeItem("userType");
     localStorage.removeItem("analysisHistory");
+    clearDemoSession();
 
     // Dispatch auth change event to clear state in App component
     window.dispatchEvent(new Event("auth-change"));
@@ -142,7 +145,13 @@ function Layout({ children }) {
                 </div>
                 <div className="flex-1">
                   <p className="text-xs text-blue-200 uppercase tracking-wider font-medium">
-                    {isBanker ? "Banker Account" : "User Account"}
+                    {isDemo
+                      ? isBanker
+                        ? "Banker · Demo"
+                        : "Customer · Demo"
+                      : isBanker
+                      ? "Banker Account"
+                      : "User Account"}
                   </p>
                   <p className="text-sm font-semibold text-white">
                     {isBanker ? "Banking Portal" : "Credit Analysis"}
@@ -163,7 +172,9 @@ function Layout({ children }) {
                 className="flex items-center w-full px-4 py-4 text-sm font-medium rounded-lg text-blue-200 hover:bg-red-600 hover:text-white transition-all duration-200 hover:shadow-md"
               >
                 <LogoutIcon style={{ fontSize: 18, marginRight: "16px" }} />
-                <span className="leading-none font-medium">Logout</span>
+                <span className="leading-none font-medium">
+                  {isDemo ? "Exit Demo" : "Logout"}
+                </span>
               </button>
             </div>
           </div>
@@ -266,7 +277,13 @@ function Layout({ children }) {
                   </div>
                   <div className="flex-1">
                     <p className="text-xs text-blue-200 uppercase tracking-wider font-medium">
-                      {isBanker ? "Banker Account" : "User Account"}
+                      {isDemo
+                        ? isBanker
+                          ? "Banker · Demo"
+                          : "Customer · Demo"
+                        : isBanker
+                        ? "Banker Account"
+                        : "User Account"}
                     </p>
                     <p className="text-sm font-semibold text-white">
                       {isBanker ? "Banking Portal" : "Credit Analysis"}
@@ -287,7 +304,9 @@ function Layout({ children }) {
                   className="flex items-center w-full px-4 py-4 text-sm font-medium rounded-lg text-blue-200 hover:bg-red-600 hover:text-white transition-all duration-200 hover:shadow-md"
                 >
                   <LogoutIcon style={{ fontSize: 18, marginRight: "16px" }} />
-                  <span className="leading-none font-medium">Logout</span>
+                  <span className="leading-none font-medium">
+                  {isDemo ? "Exit Demo" : "Logout"}
+                </span>
                 </button>
               </div>
             </div>

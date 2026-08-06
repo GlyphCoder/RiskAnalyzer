@@ -36,76 +36,181 @@ The system uses a pipeline-based approach to ensure data consistency and accurac
 
 ***
 
-## 🚀 Installation & Local Setup
+## 🎮 Try It Without an Account
+
+The login screen has a **demo mode** — pick a role and you are straight into the
+app, no signup required:
+
+-   **Continue as Customer** — fill in a single application form and get back a
+    default probability, repayment ability score, and the loan amount, term and
+    interest rate you would qualify for.
+-   **Continue as Banker** — upload a batch of applicants (use the
+    *Download Template* link on the Analyze page, which ships 12 sample
+    applicants spread evenly across all four risk bands) and review the whole
+    portfolio at once.
+
+Both roles start with a pre-scored analysis already in their history, so the
+dashboard is populated on arrival. Predictions are real output from the model
+API. A demo session never touches the accounts database — everything it
+produces is stored in the browser and cleared when you exit the demo.
+
+***
+
+## 📂 Repository Layout
+
+The three pieces of the system live in separate directories. Note that the
+frontend directory name **contains a space**, so it has to be quoted in shell
+commands.
+
+```
+RiskAnalyzer/
+├── api_endpoint.py          # Flask ML API — serves predictions (port 5000)
+├── modelonly.py             # Model training pipeline
+├── credit_risk_output/      # Trained model .pkl + aligned datasets
+├── Server/                  # Node/Express auth + saved-results API (port 4000)
+└── Default Prediction/      # React + Vite frontend (port 5173)
+```
+
+***
+
+## 🚀 Quick Start
+
+The frontend is the only piece you need to run to use the app. It is configured
+to call the **already-deployed** ML and auth APIs, so a fresh clone works with
+just these three commands:
+
+```bash
+git clone https://github.com/GlyphCoder/RiskAnalyzer.git
+cd RiskAnalyzer/"Default Prediction"
+npm install
+npm run dev
+```
+
+Open **http://localhost:5173**, and on the login screen pick
+**Continue as Customer** or **Continue as Banker**. No account or database
+needed — see [Try It Without an Account](#-try-it-without-an-account) above.
+
+> **Heads up:** the deployed services are on a free tier that sleeps when idle.
+> The first analysis after a quiet period can take up to a minute while the ML
+> service wakes up. Later requests are fast.
+
+***
+
+## 🛠️ Running the Backends Locally (Optional)
+
+You only need this if you are changing the model or the auth/results API. See
+[Pointing the Frontend at Local Backends](#pointing-the-frontend-at-local-backends)
+below — running these alone does **not** make the frontend use them.
 
 ### Prerequisites
 
--   Python (v3.8+)
--   `pip` (Python package installer)
--   Node.js (v18+)
--   Vite
+-   Python 3.8+ and `pip`
+-   Node.js 18+
+-   MongoDB (only for the Node server — a local instance or an Atlas cluster)
 
-### Installation
+### ML API (Flask)
 
-1.  **Clone the Repository**
-    ```bash
-    git clone https://github.com/Nikhil-9876/DefaultPrediction.git
-    cd DefaultPrediction
-    ```
+The trained model is committed at
+`credit_risk_output/best_credit_risk_model.pkl`, so there is **no need to
+retrain** before serving predictions.
 
-2.  **Install Backend Dependencies**
-    First, ensure you have a `requirements.txt` file (or create one) with the following packages:
-    -   `flask`
-    -   `flask-cors`
-    -   `pandas`
-    -   `scikit-learn`
-    -   `joblib`
+```bash
+pip install -r requirements.txt
+python api_endpoint.py          # serves on http://localhost:5000
+```
 
+Check it came up cleanly — `model_loaded` must be `true`:
 
-    Then, install them using `pip`:
-    ```bash
-    cd DefaultPrediction
-    pip install -r requirements.txt
-    ```
+```bash
+curl http://localhost:5000/api/credit_risk/health
+```
 
-3.  **Prepare a Training Dataset**
-    Your model is pre-configured to use a specific training file path. Place your training data (e.g., `realistic_credit_risk_dataset.csv`) and a test data file (e.g., `balanced_test_dataset.csv`) in the specified directory:
-    -   modify the file paths in the `run_fixed_system()` function to match your local setup.
+Endpoints:
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `POST` | `/api/credit_risk/analyze` | Score a batch — send a file as multipart form field `file` |
+| `GET` | `/api/credit_risk/model_info` | Feature list and risk labels |
+| `GET` | `/api/credit_risk/health` | Liveness + whether the model loaded |
+
+`/analyze` accepts `.csv`, `.xlsx`, `.xls`, `.xlsm`, `.xlsb`, `.ods` and
+`.json`, and requires at minimum the columns `age`, `monthly_income_inr` and
+`outstanding_loan_amount_inr`. It returns a JSON array with one 56-field record
+per applicant. Try it against the bundled sample:
+
+```bash
+curl -X POST -F "file=@Default Prediction/public/templates/sample.csv" \
+  http://localhost:5000/api/credit_risk/analyze
+```
+
+### Auth / Results Server (Node)
+
+Needed only for real accounts and server-saved history. Demo mode never calls
+it.
+
+```bash
+cd Server
+cp .env.example .env    # then fill in MONGODB_URL and JWT_SECRET
+npm install
+npm start               # serves on http://localhost:4000
+```
+
+On success you will see `Server Running on port 4000` followed by
+`MongoDB connected successfully`. If instead you get a `querySrv ENOTFOUND`
+error, the `MONGODB_URL` in your `.env` points at a cluster that no longer
+resolves — create a new one and update the value.
+
+### Retraining the Model
+
+Only needed if you want to rebuild the model from the raw dataset. This
+retrains all three models, picks the best, and rewrites `credit_risk_output/`.
+
+```bash
+python modelonly.py
+```
+
+### Pointing the Frontend at Local Backends
+
+The API base URLs are currently **hardcoded** in the frontend, so local
+backends are ignored until you edit them. Replace the
+`https://...onrender.com` URLs with your local ones in:
+
+-   `Default Prediction/src/App.jsx` — the ML `/analyze` call plus the three
+    results calls
+-   `Default Prediction/src/components/Authentication/Login/Login.jsx` — `URL`
+-   `Default Prediction/src/components/Authentication/Signup/Signup.jsx` — `URL`
+
+Use `http://localhost:5000` for the ML API and `http://localhost:4000` for the
+Node server. The Node server's CORS allowlist in `Server/new.js` already
+permits `http://localhost:5173`.
 
 ***
 
-## How to Run
+## 🩺 Troubleshooting
 
-### Backend
+**`npm error enoent ... could not read package.json`** — you are in the repo
+root. There is no root-level Node project; the frontend lives in
+`Default Prediction/`. Quote the path: `cd "Default Prediction"`.
 
-1.  **Open the Script**
-    Navigate to the project directory and open the Python script (e.g., `fixed_credit_risk_system.py`) in your preferred code editor.
+**`sh: .../node_modules/.bin/nodemon: Permission denied`** — the installed
+dependencies came from a different OS. Reinstall them:
 
-2.  **Execute the Script**
-    Run the main function from your terminal. This will train the models, save them, and then process the test dataset, generating a JSON output with the analysis results.
+```bash
+cd Server && rm -rf node_modules && npm install
+```
 
-    ```bash
-    python fixed_credit_risk_system.py
-    python api_endpoint.py
-    ```
+**`npm install` fails with `ETIMEDOUT`** — npm is opening too many parallel
+connections. Retry with fewer:
 
-    You will see a series of log messages indicating the progress of the training and processing steps. The final output file path and a summary of the analysis will be printed to the console.
+```bash
+npm install --maxsockets=3
+```
 
-***
+**An analysis hangs or times out on the first try** — the free-tier ML service
+is waking up. Give it a minute and retry.
 
-### Frontend
-
-1.  **Install Frontend Dependencies**
-    ```bash
-    cd DefaultPrediction/Default Prediction
-    npm install
-    ```
-
-2.  **Run the Frontend**
-    ```bash
-    npm run dev
-    ```
-    This command will start a development server, and your frontend application will be available on `http://localhost:5173/` (or another port specified by Vite).
+**Login or signup returns a server error** — the accounts database is
+unreachable. Demo mode is unaffected and needs no database.
 
 ***
 

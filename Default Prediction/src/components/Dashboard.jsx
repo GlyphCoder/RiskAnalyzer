@@ -11,10 +11,14 @@ import BarChartIcon from "@mui/icons-material/BarChart";
 import GroupIcon from "@mui/icons-material/Group";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import InfoIcon from "@mui/icons-material/Info";
+import { isDemoSession } from "../demoSession";
 
 function Dashboard({ history, onLoadAnalysis }) {
   const totalAnalyses = history.length;
   const usertype = localStorage.getItem("userType");
+  const isDemo = isDemoSession();
+  const isBanker = usertype === "banker";
 
   const getTotalPortfolioStats = (analysisHistory) => {
     let totalApproved = 0;
@@ -57,6 +61,46 @@ function Dashboard({ history, onLoadAnalysis }) {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
       </div>
+
+      {/* Orientation for demo visitors: what this role does and where to start */}
+      {isDemo && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 mr-6">
+          <div className="flex items-start">
+            <InfoIcon
+              style={{ fontSize: 20, color: "#2563eb", marginRight: "12px" }}
+            />
+            <div className="flex-1">
+              <h2 className="text-sm font-semibold text-blue-900 mb-1">
+                You are exploring as a {isBanker ? "banker" : "customer"} — this
+                is a demo
+              </h2>
+              {isBanker ? (
+                <p className="text-sm text-gray-700">
+                  Bankers score whole batches of applicants. Go to{" "}
+                  <strong>Analyze Data</strong>, download the sample CSV, and
+                  upload it to score 12 applicants at once — you get a default
+                  probability, risk band and loan recommendation per applicant.
+                  A pre-scored batch is already in your history below.
+                </p>
+              ) : (
+                <p className="text-sm text-gray-700">
+                  Customers check a single application. Go to{" "}
+                  <strong>Analyze Data</strong>, fill in the form, and the model
+                  returns your default probability, repayment ability score and
+                  the loan amount, term and interest rate you would qualify for.
+                  One worked example is already in your history below.
+                </p>
+              )}
+              <p className="text-xs text-gray-500 mt-2">
+                Predictions are real model output. Anything you run here is
+                stored in this browser only, and is cleared when you exit the
+                demo. The model runs on a free-tier host, so the first analysis
+                after a period of inactivity can take up to a minute to wake up.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Stats Cards - Top Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
